@@ -1,101 +1,83 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>石頭、剪刀、布</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f0f0f0;
-            margin: 0;
-            text-align: center;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-        }
-        .choices {
-            margin: 20px 0;
-        }
-        .choice-btn {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 0 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #007BFF;
-            color: white;
-            transition: background-color 0.3s;
-        }
-        .choice-btn:hover {
-            background-color: #0056b3;
-        }
-        #result {
-            margin-top: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #d9534f;
-        }
-        #results-display {
-            margin-top: 15px;
-            font-size: 18px;
-            color: #555;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>手機版貪吃蛇</title>
+  <style>
+    body { background:#111; display:flex; flex-direction:column; align-items:center; margin:0; }
+    canvas { background:#222; margin-top:10px; }
+    .controls { display:grid; grid-template-columns:80px 80px 80px; grid-gap:10px; margin-top:10px; }
+    .controls button {
+      width:80px; height:80px; font-size:24px; font-weight:bold;
+      background:#333; color:#fff; border:none; border-radius:10px;
+    }
+  </style>
 </head>
 <body>
+  <h2 style="color:white">🐍 手機版貪吃蛇</h2>
+  <canvas id="game" width="400" height="400"></canvas>
 
-    <div class="container">
-        <h1>石頭、剪刀、布</h1>
-        <p>請選擇你的出拳：</p>
-        <div class="choices">
-            <button class="choice-btn" onclick="playGame('rock')">石頭</button>
-            <button class="choice-btn" onclick="playGame('paper')">布</button>
-            <button class="choice-btn" onclick="playGame('scissors')">剪刀</button>
-        </div>
-        <p id="result"></p>
-        <div id="results-display"></div>
-    </div>
+  <div class="controls">
+    <div></div><button onclick="setDir('UP')">↑</button><div></div>
+    <button onclick="setDir('LEFT')">←</button><div></div><button onclick="setDir('RIGHT')">→</button>
+    <div></div><button onclick="setDir('DOWN')">↓</button><div></div>
+  </div>
 
-    <script>
-        const choices = ['rock', 'paper', 'scissors'];
-        const results = { rock: '石頭', paper: '布', scissors: '剪刀' };
-        
-        function playGame(playerChoice) {
-            const computerChoice = choices[Math.floor(Math.random() * 3)];
-            let resultText = '';
-            
-            // 判斷勝負
-            if (playerChoice === computerChoice) {
-                resultText = '平手！';
-            } else if (
-                (playerChoice === 'rock' && computerChoice === 'scissors') ||
-                (playerChoice === 'paper' && computerChoice === 'rock') ||
-                (playerChoice === 'scissors' && computerChoice === 'paper')
-            ) {
-                resultText = '你贏了！恭喜！';
-            } else {
-                resultText = '你輸了，再試一次吧！';
-            }
-            
-            // 更新網頁內容
-            document.getElementById('result').innerText = resultText;
-            document.getElementById('results-display').innerText = 
-                `你出了：${results[playerChoice]}，電腦出了：${results[computerChoice]}`;
-        }
-    </script>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const box = 20;
+    let snake = [{x:9*box,y:10*box}];
+    let food = {x:Math.floor(Math.random()*19)*box, y:Math.floor(Math.random()*19)*box};
+    let dir;
+    let score=0;
 
+    document.addEventListener("keydown", e=>{
+      if(e.key==="ArrowLeft" && dir!=="RIGHT") dir="LEFT";
+      if(e.key==="ArrowUp" && dir!=="DOWN") dir="UP";
+      if(e.key==="ArrowRight" && dir!=="LEFT") dir="RIGHT";
+      if(e.key==="ArrowDown" && dir!=="UP") dir="DOWN";
+    });
+
+    function setDir(d){ if((d==="LEFT"&&dir!=="RIGHT")||(d==="RIGHT"&&dir!=="LEFT")||(d==="UP"&&dir!=="DOWN")||(d==="DOWN"&&dir!=="UP")) dir=d; }
+
+    // 手機滑動控制
+    let touchStartX=0, touchStartY=0;
+    canvas.addEventListener("touchstart", e=>{
+      touchStartX=e.touches[0].clientX;
+      touchStartY=e.touches[0].clientY;
+    });
+    canvas.addEventListener("touchend", e=>{
+      let dx=e.changedTouches[0].clientX-touchStartX;
+      let dy=e.changedTouches[0].clientY-touchStartY;
+      if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?"RIGHT":"LEFT");
+      else setDir(dy>0?"DOWN":"UP");
+    });
+
+    function draw(){
+      ctx.fillStyle="#222"; ctx.fillRect(0,0,400,400);
+      for(let i=0;i<snake.length;i++){
+        ctx.fillStyle=i===0?"#0f0":"#0a0";
+        ctx.fillRect(snake[i].x,snake[i].y,box,box);
+      }
+      ctx.fillStyle="#f00"; ctx.fillRect(food.x,food.y,box,box);
+      let headX=snake[0].x, headY=snake[0].y;
+      if(dir==="LEFT") headX-=box;
+      if(dir==="UP") headY-=box;
+      if(dir==="RIGHT") headX+=box;
+      if(dir==="DOWN") headY+=box;
+      if(headX===food.x && headY===food.y){
+        score++;
+        food={x:Math.floor(Math.random()*19)*box, y:Math.floor(Math.random()*19)*box};
+      }else{ snake.pop(); }
+      let newHead={x:headX,y:headY};
+      if(headX<0||headY<0||headX>=400||headY>=400||snake.some(p=>p.x===newHead.x&&p.y===newHead.y)){
+        clearInterval(game); alert("遊戲結束！分數："+score);
+      }
+      snake.unshift(newHead);
+      ctx.fillStyle="#fff"; ctx.font="16px Arial"; ctx.fillText("分數:"+score,10,20);
+    }
+    let game=setInterval(draw,150);
+  </script>
 </body>
-</html>
+</html
