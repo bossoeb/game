@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>迷宮遊戲</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 30px; }
+        #maze { display: inline-block; }
+        .row { display: flex; }
+        .cell {
+            width: 24px; height: 24px;
+            border: 1px solid #888;
+            box-sizing: border-box;
+            background: #fff;
+             /* visibility: hidden;  預設隱藏 */
+        }
+        .visible { visibility: visible; }
+        .wall { background: #333; }
+        .player { background: #1976d2; }
+        .goal { background: #43a047; }
+        #nextBtn { display: none; margin-top: 20px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div id="maze"></div> 
+    <p id="msg"></p>
+    <button id="nextBtn" onclick="goToNext()">下一關</button>
+    <script>
+        const SIZE = 19; // 迷宮大小
+        let mazeData = [];
+        let player = { r: 1, c: 1 }; // 玩家起始位置
+        let goal = { r: SIZE - 2, c: SIZE - 2 }; // 目標位置
+
+        // 隨機生成迷宮（深度優先生成法）
+        function generateMaze(size) {
+            let maze = Array.from({ length: size }, () => Array(size).fill(1));
+            function shuffle(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+            function carve(r, c) {
+                maze[r][c] = 0;
+                let dirs = shuffle([[0,2],[0,-2],[2,0],[-2,0]]);
+                for (const [dr, dc] of dirs) {
+                    let nr = r + dr, nc = c + dc;
+                    if (nr > 0 && nr < size-1 && nc > 0 && nc < size-1 && maze[nr][nc] === 1) {
+                        maze[r + dr/2][c + dc/2] = 0;
+                        carve(nr, nc);
+                    }
+                }
+            }
+            carve(1, 1);
+            maze[goal.r][goal.c] = 2; // 終點
+            return maze;
+        }
+
+        function drawMaze() {
+            const mazeDiv = document.getElementById('maze');
+            mazeDiv.innerHTML = '';
+            for (let r = 0; r < mazeData.length; r++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+                for (let c = 0; c < mazeData[r].length; c++) {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+                    // 只顯示以玩家為中心的5x5區域
+                    if (Math.abs(player.r - r) <= 2 && Math.abs(player.c - c) <= 2) { // 5x5區域
+                        cellDiv.classList.add('visible'); // 讓這些格子可見
+                    }
+                    if (mazeData[r][c] === 1) cellDiv.classList.add('wall');
+                    if (mazeData[r][c] === 2) cellDiv.classList.add('goal');
+                    if (player.r === r && player.c === c) cellDiv.classList.add('player');
+                    rowDiv.appendChild(cellDiv);
+                }
+                mazeDiv.appendChild(rowDiv);
+            }
+        }
+
+        function movePlayer(dr, dc) {
+            const nr = player.r + dr;
+            const nc = player.c + dc;
+            if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) return;
+            if (mazeData[nr][nc] === 1) return; // 牆不能走
+            player.r = nr;
+            player.c = nc;
+            drawMaze();
+            if (mazeData[nr][nc] === 2) {
+                document.getElementById('msg').textContent = '恭喜你走出迷宮！';
+                document.getElementById('nextBtn').style.display = "inline-block";
+            }
+        }
+
+        function goToNext() {
+            window.location.href = "2.html";
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('msg').textContent) return;
+            if (e.key === 'ArrowUp') movePlayer(-1, 0);
+            if (e.key === 'ArrowDown') movePlayer(1, 0);
+            if (e.key === 'ArrowLeft') movePlayer(0, -1);
+            if (e.key === 'ArrowRight') movePlayer(0, 1);
+        });
+
+        // 初始化
+        mazeData = generateMaze(SIZE);
+        player = { r: 1, c: 1 };
+        drawMaze();
+    </script>
+</body>
+</html>
